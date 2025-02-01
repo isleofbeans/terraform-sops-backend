@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//      http://www.apache.org/licenses/LICENSE-2.0
+//       http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package transform
+package transformer
 
 import (
 	"fmt"
@@ -33,7 +33,21 @@ import (
 	transformConfig "github.com/wtschreiter/terraformsopsbackend/internal/pkg/config"
 )
 
-func TransformToSops(config transformConfig.TransformConfig, input []byte, handler func(result []byte)) error {
+// SOPSTransformer encrypts to SOPS and decrypts from SOPS
+type SOPSTransformer interface {
+	ToSops(config transformConfig.TransformConfig, input []byte, handler func(result []byte)) error
+	FromSops(config transformConfig.TransformConfig, input []byte, handler func(result []byte) error) error
+}
+
+// New creates a new SOPSTransformer
+func New() SOPSTransformer {
+	return transform{}
+}
+
+type transform struct{}
+
+// ToSops transforms the input JSON data into a SOPS encrypted JSON data and hands it tho the handler
+func (transform) ToSops(config transformConfig.TransformConfig, input []byte, handler func(result []byte)) error {
 
 	cipher := aes.NewCipher()
 	inputStore := inputStore()
@@ -93,7 +107,8 @@ func TransformToSops(config transformConfig.TransformConfig, input []byte, handl
 	return nil
 }
 
-func TransformFromSops(config transformConfig.TransformConfig, input []byte, handler func(result []byte) error) error {
+// FromSops transforms the SOPS encrypted input JSON data into a decrypted JSON data and hands it tho the handler
+func (transform) FromSops(config transformConfig.TransformConfig, input []byte, handler func(result []byte) error) error {
 
 	os.Setenv(age.SopsAgeKeyEnv, config.AgePrivateKey())
 
@@ -104,7 +119,17 @@ func TransformFromSops(config transformConfig.TransformConfig, input []byte, han
 	if err != nil {
 		return err
 	}
-	key, err := tree.Metadata.GetDataKeyWithKeyServices([]keyservice.KeyServiceClient{keyservice.NewCustomLocalClient(newKeyServiceServer(config, keyservice.Server{}))}, nil)
+	key, err := tree.Metadata.GetDataKeyWithKeyServices(
+		[]keyservice.KeyServiceClient{
+			keyservice.NewCustomLocalClient(
+				newKeyServiceServer(config, keyservice.Server{}),
+			),
+		},
+		[]string{
+			"age",
+			"hc_vault",
+		},
+	)
 	if err != nil {
 		return err
 	}
@@ -151,9 +176,8 @@ func outputStore() sops.Store {
 func agePublicKey(config transformConfig.AgeConfig) (string, error) {
 	if config.AgePublicKey() == "" {
 		return "", fmt.Errorf("configuration failure, missing public AGE key")
-	} else {
-		return config.AgePublicKey(), nil
 	}
+	return config.AgePublicKey(), nil
 }
 
 func encryptMetadata(keyGroup sops.KeyGroup) sops.Metadata {

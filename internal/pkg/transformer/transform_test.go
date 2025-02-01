@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//      http://www.apache.org/licenses/LICENSE-2.0
+//       http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package transform
+package transformer
 
 import (
 	"encoding/json"
@@ -24,7 +24,8 @@ import (
 	terraformConfig "github.com/wtschreiter/terraformsopsbackend/internal/pkg/config"
 )
 
-func TestTransformToSops(t *testing.T) {
+func TestToSops(t *testing.T) {
+	transformer := New()
 	tests := []struct {
 		name                 string
 		agePublicKey         string
@@ -73,11 +74,11 @@ func TestTransformToSops(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var err error
-			var unencryptedJson []byte
+			var unencryptedJSON []byte
 			var unencryptedTFState tfstate
-			var encryptedJson []byte
+			var encryptedJSON []byte
 			var encryptedTFState tfstate
-			var decryptedJson []byte
+			var decryptedJSON []byte
 			var decryptedTFState tfstate
 			var config terraformConfig.TransformConfig = newConfig(
 				tt.agePublicKey,
@@ -90,17 +91,17 @@ func TestTransformToSops(t *testing.T) {
 			)
 
 			// Prepare
-			unencryptedJson, err = os.ReadFile("fixtures/tfstates/unencrypted.tfstate")
+			unencryptedJSON, err = os.ReadFile("fixtures/tfstates/unencrypted.tfstate")
 			if !assert.NoError(t, err) {
 				return
 			}
-			err = json.Unmarshal(unencryptedJson, &unencryptedTFState)
+			err = json.Unmarshal(unencryptedJSON, &unencryptedTFState)
 			if !assert.NoError(t, err) {
 				return
 			}
 
 			// Act
-			if err = TransformToSops(config, unencryptedJson, func(sopsResult []byte) { encryptedJson = sopsResult }); (err != nil) != tt.wantErr {
+			if err = transformer.ToSops(config, unencryptedJSON, func(sopsResult []byte) { encryptedJSON = sopsResult }); (err != nil) != tt.wantErr {
 				t.Errorf("TransformToSops() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
@@ -109,10 +110,10 @@ func TestTransformToSops(t *testing.T) {
 			}
 
 			// Validate result
-			assert.True(t, len(encryptedJson) > 0)
-			err = json.Unmarshal(encryptedJson, &encryptedTFState)
+			assert.True(t, len(encryptedJSON) > 0)
+			err = json.Unmarshal(encryptedJSON, &encryptedTFState)
 			if !assert.NoError(t, err) {
-				fmt.Println(string(encryptedJson))
+				fmt.Println(string(encryptedJSON))
 				return
 			}
 			assert.Equal(t, unencryptedTFState.Version, encryptedTFState.Version)
@@ -122,13 +123,13 @@ func TestTransformToSops(t *testing.T) {
 			assert.NotEqual(t, unencryptedTFState.Outputs.Password.Value, encryptedTFState.Outputs.Password.Value)
 
 			// Act reverse
-			err = TransformFromSops(config, encryptedJson, func(result []byte) error { decryptedJson = result; return nil })
+			err = transformer.FromSops(config, encryptedJSON, func(result []byte) error { decryptedJSON = result; return nil })
 			if !assert.NoError(t, err) {
 				return
 			}
 
 			// Validate reverse
-			err = json.Unmarshal(decryptedJson, &decryptedTFState)
+			err = json.Unmarshal(decryptedJSON, &decryptedTFState)
 			if !assert.NoError(t, err) {
 				return
 			}
@@ -137,7 +138,8 @@ func TestTransformToSops(t *testing.T) {
 	}
 }
 
-func TestTransformFromSops(t *testing.T) {
+func TestFromSops(t *testing.T) {
+	transformer := New()
 	withVaultToSops := newConfig(
 		"age17gnuhjensr0f902238xt4jkdu9qh9anhjklfn7tr8m3ex5ltxfxqt3yx08",
 		"",
@@ -188,10 +190,10 @@ func TestTransformFromSops(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var err error
-			var unencryptedJson []byte
+			var unencryptedJSON []byte
 			var unencryptedTFState tfstate
-			var encryptedJson []byte
-			var decryptedJson []byte
+			var encryptedJSON []byte
+			var decryptedJSON []byte
 			var decryptedTFState tfstate
 			var config terraformConfig.TransformConfig = newConfig(
 				"",
@@ -204,21 +206,21 @@ func TestTransformFromSops(t *testing.T) {
 			)
 
 			// Prepare
-			unencryptedJson, err = os.ReadFile("fixtures/tfstates/unencrypted.tfstate")
+			unencryptedJSON, err = os.ReadFile("fixtures/tfstates/unencrypted.tfstate")
 			if !assert.NoError(t, err) {
 				return
 			}
-			err = json.Unmarshal(unencryptedJson, &unencryptedTFState)
+			err = json.Unmarshal(unencryptedJSON, &unencryptedTFState)
 			if !assert.NoError(t, err) {
 				return
 			}
-			err = TransformToSops(tt.toSopsConfig, unencryptedJson, func(sopsResult []byte) { encryptedJson = sopsResult })
+			err = transformer.ToSops(tt.toSopsConfig, unencryptedJSON, func(sopsResult []byte) { encryptedJSON = sopsResult })
 			if !assert.NoError(t, err) {
 				return
 			}
 
 			// Act
-			if err = TransformFromSops(config, encryptedJson, func(sopsResult []byte) error { decryptedJson = sopsResult; return nil }); (err != nil) != tt.wantErr {
+			if err = transformer.FromSops(config, encryptedJSON, func(sopsResult []byte) error { decryptedJSON = sopsResult; return nil }); (err != nil) != tt.wantErr {
 				t.Errorf("TransformFromSops() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
@@ -227,7 +229,7 @@ func TestTransformFromSops(t *testing.T) {
 			}
 
 			// Validate result
-			err = json.Unmarshal(decryptedJson, &decryptedTFState)
+			err = json.Unmarshal(decryptedJSON, &decryptedTFState)
 			if !assert.NoError(t, err) {
 				return
 			}
