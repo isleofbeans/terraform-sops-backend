@@ -109,9 +109,9 @@ func initStartCmd() {
 
 	registerStringParameter(startCmd, cobraKeyAgePublicKey, viperKeyAgePublicKey, "public AGE key to encrypt terraform state", true)
 	registerStringParameter(startCmd, cobraKeyAgePrivateKey, viperKeyAgePrivateKey, "private AGE key to decrypt terraform state", false)
-	registerStringParameter(startCmd, cobraKeyVaultAddr, viperKeyVaultAddr, "vault address to de- and encrypt terraform state", true)
-	registerStringParameter(startCmd, cobraKeyVaultAppRoleID, viperKeyVaultAppRoleID, "AppRole ID to authenticate with vault", true)
-	registerStringParameter(startCmd, cobraKeyVaultAppRoleSecretID, viperKeyVaultAppRoleSecretID, "AppRole secret ID to authenticate with vault", true)
+	registerStringParameter(startCmd, cobraKeyVaultAddr, viperKeyVaultAddr, "vault address to de- and encrypt terraform state", false)
+	registerStringParameter(startCmd, cobraKeyVaultAppRoleID, viperKeyVaultAppRoleID, "(required if --vault-addr != \"\") AppRole ID to authenticate with vault", false)
+	registerStringParameter(startCmd, cobraKeyVaultAppRoleSecretID, viperKeyVaultAppRoleSecretID, "(required if --vault-addr != \"\") AppRole secret ID to authenticate with vault", false)
 	registerStringParameterWithDefault(startCmd, cobraKeyVaultTransitMount, viperKeyVaultTransitMount, "mount point of the transit engine to use", false, "sops")
 	registerStringParameterWithDefault(startCmd, cobraKeyVaultTransitName, viperKeyVaultTransitName, "name of the transit engine secret to use", false, "terraform")
 	registerStringParameterWithDefault(startCmd, cobraKeyServerPort, viperKeyServerPort, "port the service is listening to", false, "8080")
