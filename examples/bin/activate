@@ -1,0 +1,71 @@
+#!/usr/bin/env sh
+
+if [ -n "${EXAMPLES_ACTIVATED+set}" ] ; then
+echo "examples already activated"
+return
+fi
+
+BASEDIR=$(cd $(dirname $0)/../..; pwd)
+EXAMPLES_DIR=$(cd $(dirname $0)/..; pwd)
+echo "Setup examples in ${EXAMPLES_DIR}"
+echo "To stop the examples setup run 'deactivate' ..."
+
+function deactivate {
+    stop_vault
+    unset -f start_vault
+    unset -f stop_vault
+    unset -f deactivate
+    unset VAULT_DEV_ROOT_TOKEN_ID
+    unset EXAMPLES_ACTIVATED
+}
+
+function start_vault {
+    if [ -n "${VAULT_PID+set}" ] ; then
+    echo "vault already started"
+    return
+    fi
+    vault server -dev > $EXAMPLES_DIR/vault.log 2>&1 &
+    VAULT_PID=$!
+    export VAULT_ADDR='http://127.0.0.1:8200'
+}
+
+function stop_vault {
+    if [ -z "${VAULT_PID+set}" ] ; then
+    echo "vault not running"
+    return
+    fi
+    kill "${VAULT_PID}"
+    unset VAULT_PID
+    unset VAULT_ADDR
+    unset SETUP_VAULT
+}
+
+function setup_vault {
+    start_vault > /dev/null
+    terragrunt --terragrunt-working-dir "${EXAMPLES_DIR}/vault-setup" apply -auto-approve
+    SETUP_VAULT=true
+}
+
+function approle_id {
+    if [ -z "${SETUP_VAULT+set}" ] ; then
+    echo setup vault first
+    return
+    fi
+    terragrunt --terragrunt-working-dir "${EXAMPLES_DIR}/vault-setup" output -raw approle_id
+}
+
+function approle_secret_id {
+    if [ -z "${SETUP_VAULT+set}" ] ; then
+    echo setup vault first
+    return
+    fi
+    terragrunt --terragrunt-working-dir "${EXAMPLES_DIR}/vault-setup" output -raw approle_id
+}
+
+function setup_development {
+    start_vault > /dev/null
+    terragrunt run-all --terragrunt-include-external-dependencies --terragrunt-non-interactive apply
+}
+
+export VAULT_DEV_ROOT_TOKEN_ID=dev-token
+export EXAMPLES_ACTIVATED=true

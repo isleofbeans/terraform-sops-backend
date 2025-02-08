@@ -20,11 +20,43 @@ import (
 	"os"
 	"testing"
 
+	"github.com/joho/godotenv"
 	"github.com/stretchr/testify/assert"
 	terraformConfig "github.com/wtschreiter/terraformsopsbackend/internal/pkg/config"
 )
 
 func TestToSops(t *testing.T) {
+	if !assert.NoError(t, godotenv.Load("../../../.testenv")) {
+		return
+	}
+	agePublicKey := os.Getenv("TRANSFORM_AGE_PUBLIC_KEY")
+	if !assert.NotEmpty(t, agePublicKey, "require TRANSFORM_AGE_PUBLIC_KEY") {
+		return
+	}
+	agePrivateKey := os.Getenv("TRANSFORM_AGE_PRIVATE_KEY")
+	if !assert.NotEmpty(t, agePrivateKey, "require TRANSFORM_AGE_PRIVATE_KEY") {
+		return
+	}
+	vaultAddr := os.Getenv("TRANSFORM_VAULT_ADDRESS")
+	if !assert.NotEmpty(t, vaultAddr, "require TRANSFORM_VAULT_ADDRESS") {
+		return
+	}
+	vaultAppRoleID := os.Getenv("TRANSFORM_VAULT_APP_ROLE_ID")
+	if !assert.NotEmpty(t, vaultAppRoleID, "require TRANSFORM_VAULT_APP_ROLE_ID") {
+		return
+	}
+	vaultAppRoleSecretID := os.Getenv("TRANSFORM_VAULT_APP_ROLE_SECRET_ID")
+	if !assert.NotEmpty(t, vaultAppRoleSecretID, "require TRANSFORM_VAULT_APP_ROLE_SECRET_ID") {
+		return
+	}
+	vaultKeyMount := os.Getenv("TRANSFORM_VAULT_TRANSIT_MOUNT")
+	if !assert.NotEmpty(t, vaultKeyMount, "require TRANSFORM_VAULT_TRANSIT_MOUNT") {
+		return
+	}
+	vaultKeyName := os.Getenv("TRANSFORM_VAULT_TRANSIT_NAME")
+	if !assert.NotEmpty(t, vaultKeyName, "require TRANSFORM_VAULT_TRANSIT_NAME") {
+		return
+	}
 	transformer := New()
 	tests := []struct {
 		name                 string
@@ -39,8 +71,8 @@ func TestToSops(t *testing.T) {
 	}{
 		{
 			name:          "plain positive age",
-			agePublicKey:  "age17gnuhjensr0f902238xt4jkdu9qh9anhjklfn7tr8m3ex5ltxfxqt3yx08",
-			agePrivateKey: "AGE-SECRET-KEY-1Z22A6EL3ECQC96ZDMPD5KRPUX32SCAMU2DJGV3Q48PXN3ZW535VQFQDEF9",
+			agePublicKey:  agePublicKey,
+			agePrivateKey: agePrivateKey,
 		},
 		{
 			name:    "error on missing public age key",
@@ -53,21 +85,21 @@ func TestToSops(t *testing.T) {
 		},
 		{
 			name:                 "plain positive vault",
-			agePublicKey:         "age17gnuhjensr0f902238xt4jkdu9qh9anhjklfn7tr8m3ex5ltxfxqt3yx08",
-			vaultAddr:            "http://127.0.0.1:8200",
-			vaultAppRoleID:       "2e8a30c1-66e3-343f-6c14-f5c228eb4171",
-			vaultAppRoleSecretID: "37cf928c-0c3b-6e2d-d099-d24c94fe6a75",
-			vaultKeyMount:        "sops",
-			vaultKeyName:         "terraform",
+			agePublicKey:         agePublicKey,
+			vaultAddr:            vaultAddr,
+			vaultAppRoleID:       vaultAppRoleID,
+			vaultAppRoleSecretID: vaultAppRoleSecretID,
+			vaultKeyMount:        vaultKeyMount,
+			vaultKeyName:         vaultKeyName,
 		},
 		{
 			name:                 "error on missing vault key mount",
-			agePublicKey:         "age17gnuhjensr0f902238xt4jkdu9qh9anhjklfn7tr8m3ex5ltxfxqt3yx08",
-			vaultAddr:            "http://127.0.0.1:8200",
-			vaultAppRoleID:       "2e8a30c1-66e3-343f-6c14-f5c228eb4171",
-			vaultAppRoleSecretID: "37cf928c-0c3b-6e2d-d099-d24c94fe6a75",
+			agePublicKey:         agePublicKey,
+			vaultAddr:            vaultAddr,
+			vaultAppRoleID:       vaultAppRoleID,
+			vaultAppRoleSecretID: vaultAppRoleSecretID,
 			vaultKeyMount:        "not/defined/mount",
-			vaultKeyName:         "terraform",
+			vaultKeyName:         vaultKeyName,
 			wantErr:              true,
 		},
 	}
@@ -139,18 +171,49 @@ func TestToSops(t *testing.T) {
 }
 
 func TestFromSops(t *testing.T) {
+	if !assert.NoError(t, godotenv.Load("../../../.testenv")) {
+		return
+	}
+	agePublicKey := os.Getenv("TRANSFORM_AGE_PUBLIC_KEY")
+	if !assert.NotEmpty(t, agePublicKey, "require TRANSFORM_AGE_PUBLIC_KEY") {
+		return
+	}
+	agePrivateKey := os.Getenv("TRANSFORM_AGE_PRIVATE_KEY")
+	if !assert.NotEmpty(t, agePrivateKey, "require TRANSFORM_AGE_PRIVATE_KEY") {
+		return
+	}
+	vaultAddr := os.Getenv("TRANSFORM_VAULT_ADDRESS")
+	if !assert.NotEmpty(t, vaultAddr, "require TRANSFORM_VAULT_ADDRESS") {
+		return
+	}
+	vaultAppRoleID := os.Getenv("TRANSFORM_VAULT_APP_ROLE_ID")
+	if !assert.NotEmpty(t, vaultAppRoleID, "require TRANSFORM_VAULT_APP_ROLE_ID") {
+		return
+	}
+	vaultAppRoleSecretID := os.Getenv("TRANSFORM_VAULT_APP_ROLE_SECRET_ID")
+	if !assert.NotEmpty(t, vaultAppRoleSecretID, "require TRANSFORM_VAULT_APP_ROLE_SECRET_ID") {
+		return
+	}
+	vaultKeyMount := os.Getenv("TRANSFORM_VAULT_TRANSIT_MOUNT")
+	if !assert.NotEmpty(t, vaultKeyMount, "require TRANSFORM_VAULT_TRANSIT_MOUNT") {
+		return
+	}
+	vaultKeyName := os.Getenv("TRANSFORM_VAULT_TRANSIT_NAME")
+	if !assert.NotEmpty(t, vaultKeyName, "require TRANSFORM_VAULT_TRANSIT_NAME") {
+		return
+	}
 	transformer := New()
 	withVaultToSops := newConfig(
-		"age17gnuhjensr0f902238xt4jkdu9qh9anhjklfn7tr8m3ex5ltxfxqt3yx08",
+		agePublicKey,
 		"",
-		"http://127.0.0.1:8200",
-		"2e8a30c1-66e3-343f-6c14-f5c228eb4171",
-		"37cf928c-0c3b-6e2d-d099-d24c94fe6a75",
-		"sops",
-		"terraform",
+		vaultAddr,
+		vaultAppRoleID,
+		vaultAppRoleSecretID,
+		vaultKeyMount,
+		vaultKeyName,
 	)
 	withoutVaultToSops := newConfig(
-		"age17gnuhjensr0f902238xt4jkdu9qh9anhjklfn7tr8m3ex5ltxfxqt3yx08",
+		agePublicKey,
 		"",
 		"",
 		"",
@@ -170,20 +233,20 @@ func TestFromSops(t *testing.T) {
 		{
 			name:                 "plain positive with vault",
 			toSopsConfig:         withVaultToSops,
-			vaultAddr:            "http://127.0.0.1:8200",
-			vaultAppRoleID:       "2e8a30c1-66e3-343f-6c14-f5c228eb4171",
-			vaultAppRoleSecretID: "37cf928c-0c3b-6e2d-d099-d24c94fe6a75",
+			vaultAddr:            vaultAddr,
+			vaultAppRoleID:       vaultAppRoleID,
+			vaultAppRoleSecretID: vaultAppRoleSecretID,
 		},
 		{
 			name:          "plain positive without vault",
 			toSopsConfig:  withoutVaultToSops,
-			agePrivateKey: "AGE-SECRET-KEY-1Z22A6EL3ECQC96ZDMPD5KRPUX32SCAMU2DJGV3Q48PXN3ZW535VQFQDEF9",
+			agePrivateKey: agePrivateKey,
 		},
 		{
 			name:          "positive with vault fall back to age",
 			toSopsConfig:  withVaultToSops,
-			vaultAddr:     "http://127.0.0.1:8200",
-			agePrivateKey: "AGE-SECRET-KEY-1Z22A6EL3ECQC96ZDMPD5KRPUX32SCAMU2DJGV3Q48PXN3ZW535VQFQDEF9",
+			vaultAddr:     vaultAddr,
+			agePrivateKey: agePrivateKey,
 		},
 	}
 
