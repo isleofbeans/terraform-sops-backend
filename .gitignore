@@ -1,4 +1,8 @@
 .env.private
+*.env
 .testenv
+age-encrypted-terraform-state
+vault-encrypted-terraform-state
 __debug*
 private.yaml
+*.bkp
