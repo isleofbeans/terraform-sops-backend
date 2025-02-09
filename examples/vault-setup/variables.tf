@@ -1,7 +1,7 @@
 variable "transit_mount_path" {
   description = "mount path for the example transit engine"
   type        = string
-  default     = "examples/transit"
+  default     = "sops"
 }
 variable "transit_mount_description" {
   description = "description"
@@ -12,7 +12,7 @@ variable "transit_mount_description" {
 variable "transit_backend_name" {
   description = "TODO"
   type        = string
-  default     = "sops-endpoint"
+  default     = "terraform"
 }
 
 variable "transit_role_name" {
