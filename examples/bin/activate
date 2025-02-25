@@ -14,6 +14,10 @@ function deactivate {
     stop_vault
     unset -f start_vault
     unset -f stop_vault
+    unset -f setup_vault
+    unset -f approle_id
+    unset -f approle_secret_id
+    unset -f setup_development
     unset -f deactivate
     unset VAULT_DEV_ROOT_TOKEN_ID
     unset EXAMPLES_ACTIVATED

@@ -1,0 +1,16 @@
+# Development requirements
+golang 1.24.0
+vault 1.18.5
+
+# Contribution requirements
+pre-commit 4.1.0 # https://github.com/jonathanmorley/asdf-pre-commit.git
+
+# Automated development environment requirements
+terraform-docs 0.19.0 # https://github.com/looztra/asdf-terraform-docs.git
+terraform 1.10.5
+terragrunt 0.73.13 # https://github.com/ohmer/asdf-terragrunt.git
+tflint 0.55.1 # https://github.com/skyzyx/asdf-tflint.git
+
+# optional tooling
+age 1.2.1 # https://github.com/threkk/asdf-age
+sops 3.9.4 # https://github.com/feniix/asdf-sops.git
