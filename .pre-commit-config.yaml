@@ -52,6 +52,17 @@ repos:
         args:
           - --args=--config=__GIT_WORKING_DIR__/examples/.tflint.hcl
           - --args=--var-file=__GIT_WORKING_DIR__/examples/.tflint.tfvars
+  - repo: https://github.com/terraform-docs/terraform-docs
+    rev: v0.19.0
+    hooks:
+      # Must be repeated with id: terraform-docs-go
+      # Per module in the repository
+      # The args must point to the root of the module
+      - id: terraform-docs-go
+        args: ["./examples/development-setup"]
+      - id: terraform-docs-go
+        args: ["./examples/vault-setup"]
+
   - repo: https://github.com/gruntwork-io/pre-commit
     rev: v0.1.25
     hooks:
