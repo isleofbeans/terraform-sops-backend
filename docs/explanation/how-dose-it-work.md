@@ -2,7 +2,7 @@
 
 [![readme](../assets/breadcrum-readme.drawio.svg)](../../README.md)[![explanation](../assets/breadcrum-explanation.drawio.svg)](./index.md)
 
-terraform-sops-backend works as a intermediate terraform HTTP backend using a regular terraform HTTP backend but encrypting the terraform state before it is forwarded the the actual backend.  
+terraform-sops-backend works as a intermediate terraform HTTP backend using a regular terraform HTTP backend but encrypting the terraform state before it is forwarded to the actual backend.  
 It supports all default methods defined by the [terraform remote backend type HTTP](https://developer.hashicorp.com/terraform/language/backend/http) which are:
 
 * GET to fetch the state

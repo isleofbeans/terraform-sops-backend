@@ -2,7 +2,7 @@
 
 [![readme](../assets/breadcrum-readme.drawio.svg)](../../README.md)[![explanation](../assets/breadcrum-explanation.drawio.svg)](./index.md)
 
-When ether a platform engineer is using a terraform HTTP backend provided by a public provider as <https://gitlab.com> he has the dilemma that sensitive data are potentially visible to that public provider.  
+Whenever a platform engineer is using a terraform HTTP backend provided by a public provider as <https://gitlab.com> [the dilemma occur](https://github.com/isleofbeans/terraform-sops-backend) that sensitive data are potentially visible to that public provider.  
 terraform-sops-backend is addressing this by using [SOPS](https://github.com/getsops/sops) to encrypt the fields in the terraform state with [AGE](https://github.com/FiloSottile/age) and /or [Vault](https://developer.hashicorp.com/vault)
 
 ## Unencrypted terraform state
