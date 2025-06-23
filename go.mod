@@ -7,7 +7,7 @@ toolchain go1.24.2
 require (
 	github.com/getsops/sops/v3 v3.10.2
 	github.com/hashicorp/go-hclog v1.6.3
-	github.com/hashicorp/go-retryablehttp v0.7.7
+	github.com/hashicorp/go-retryablehttp v0.7.8
 	github.com/hashicorp/vault-client-go v0.4.3
 	github.com/joho/godotenv v1.5.1
 	github.com/spf13/cobra v1.9.1
