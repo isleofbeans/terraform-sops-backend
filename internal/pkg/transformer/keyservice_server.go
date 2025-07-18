@@ -19,7 +19,12 @@ import (
 
 	"github.com/getsops/sops/v3/hcvault"
 	"github.com/getsops/sops/v3/keyservice"
+	"github.com/prometheus/client_golang/prometheus"
 	transformConfig "github.com/wtschreiter/terraformsopsbackend/internal/pkg/config"
+)
+
+var (
+	keyServiceServerCache *keyServiceServer
 )
 
 type keyServiceServer struct {
@@ -28,7 +33,14 @@ type keyServiceServer struct {
 	vaultClient *vaultClient
 }
 
-func newKeyServiceServer(config transformConfig.VaultConfig, parent keyservice.Server) keyservice.KeyServiceServer {
+func cachedKeyServiceServer(config transformConfig.VaultConfig) keyservice.KeyServiceServer {
+	if keyServiceServerCache == nil {
+		keyServiceServerCache = newKeyServiceServer(config, keyservice.Server{})
+	}
+	return keyServiceServerCache
+}
+
+func newKeyServiceServer(config transformConfig.VaultConfig, parent keyservice.Server) *keyServiceServer {
 	vaultClient := newVaultClient(config)
 	return &keyServiceServer{
 		parent:      parent,
@@ -44,7 +56,9 @@ func (ks *keyServiceServer) encryptWithVault(key *keyservice.VaultKey, plaintext
 		KeyName:      key.KeyName,
 	}
 	hcvault.Token(ks.vaultClient.getToken()).ApplyToMasterKey(&vaultKey)
+	timer := prometheus.NewTimer(vaultRequestDuration.WithLabelValues("encrypt"))
 	err := vaultKey.Encrypt(plaintext)
+	timer.ObserveDuration()
 	if err != nil {
 		return nil, err
 	}
@@ -59,7 +73,9 @@ func (ks *keyServiceServer) decryptWithVault(key *keyservice.VaultKey, ciphertex
 	}
 	vaultKey.EncryptedKey = string(ciphertext)
 	hcvault.Token(ks.vaultClient.getToken()).ApplyToMasterKey(&vaultKey)
+	timer := prometheus.NewTimer(vaultRequestDuration.WithLabelValues("decrypt"))
 	plaintext, err := vaultKey.Decrypt()
+	timer.ObserveDuration()
 	return []byte(plaintext), err
 }
 
@@ -68,6 +84,8 @@ func (ks *keyServiceServer) Encrypt(ctx context.Context,
 
 	switch k := req.Key.KeyType.(type) {
 	case *keyservice.Key_VaultKey:
+		timer := prometheus.NewTimer(keyServiceRequestDuration.WithLabelValues("encrypt", "vault"))
+		defer timer.ObserveDuration()
 		ciphertext, err := ks.encryptWithVault(k.VaultKey, req.Plaintext)
 		if err != nil {
 			return nil, err
@@ -76,6 +94,8 @@ func (ks *keyServiceServer) Encrypt(ctx context.Context,
 			Ciphertext: ciphertext,
 		}, nil
 	default:
+		timer := prometheus.NewTimer(keyServiceRequestDuration.WithLabelValues("encrypt", "age"))
+		defer timer.ObserveDuration()
 		return ks.parent.Encrypt(ctx, req)
 	}
 }
@@ -85,6 +105,8 @@ func (ks *keyServiceServer) Decrypt(ctx context.Context,
 
 	switch k := req.Key.KeyType.(type) {
 	case *keyservice.Key_VaultKey:
+		timer := prometheus.NewTimer(keyServiceRequestDuration.WithLabelValues("decrypt", "vault"))
+		defer timer.ObserveDuration()
 		plaintext, err := ks.decryptWithVault(k.VaultKey, req.Ciphertext)
 		if err != nil {
 			return nil, err
@@ -93,6 +115,8 @@ func (ks *keyServiceServer) Decrypt(ctx context.Context,
 			Plaintext: plaintext,
 		}, nil
 	default:
+		timer := prometheus.NewTimer(keyServiceRequestDuration.WithLabelValues("decrypt", "age"))
+		defer timer.ObserveDuration()
 		return ks.parent.Decrypt(ctx, req)
 	}
 }

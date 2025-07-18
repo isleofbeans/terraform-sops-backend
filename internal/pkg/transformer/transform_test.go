@@ -17,9 +17,11 @@ package transformer
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"testing"
 
+	"github.com/hashicorp/go-hclog"
 	"github.com/joho/godotenv"
 	"github.com/stretchr/testify/assert"
 	terraformConfig "github.com/wtschreiter/terraformsopsbackend/internal/pkg/config"
@@ -315,6 +317,10 @@ type tfstate struct {
 	CheckResults []map[string]interface{} `json:"check_results"`
 }
 
+var (
+	testLogger hclog.Logger = newTestLogger()
+)
+
 type testConfig struct {
 	agePrivateKey        string
 	agePublicKey         string
@@ -332,6 +338,7 @@ func (c testConfig) VaultAppRoleID() string       { return c.vaultAppRoleID }
 func (c testConfig) VaultAppRoleSecretID() string { return c.vaultAppRoleSecretID }
 func (c testConfig) VaultKeyMount() string        { return c.vaultKeyMount }
 func (c testConfig) VaultKeyName() string         { return c.vaultKeyName }
+func (c testConfig) Logger() hclog.Logger         { return testLogger }
 
 func newConfig(
 	agePublicKey,
@@ -351,4 +358,14 @@ func newConfig(
 		vaultKeyMount:        vaultKeyMount,
 		vaultKeyName:         vaultKeyName,
 	}
+}
+
+func newTestLogger() hclog.Logger {
+	return hclog.NewInterceptLogger(&hclog.LoggerOptions{
+		Name:              "test",
+		Level:             hclog.Trace,
+		Output:            io.Writer(os.Stderr),
+		IndependentLevels: true,
+		JSONFormat:        false,
+	})
 }

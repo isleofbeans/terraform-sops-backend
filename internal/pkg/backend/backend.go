@@ -15,11 +15,13 @@
 package backend
 
 import (
+	"fmt"
 	"net/http"
 	"time"
 
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/go-retryablehttp"
+	"github.com/prometheus/client_golang/prometheus"
 )
 
 // Client is sending requests
@@ -44,5 +46,9 @@ type retryableHTTPClient struct {
 }
 
 func (c retryableHTTPClient) Send(req *retryablehttp.Request) (*http.Response, error) {
-	return c.client.Do(req)
+	timer := prometheus.NewTimer(requestDuration.WithLabelValues(req.Method, req.URL.Path))
+	defer timer.ObserveDuration()
+	resp, err := c.client.Do(req)
+	responseStatusCounter.WithLabelValues(fmt.Sprintf("%vxx", resp.StatusCode/100), req.URL.Path).Inc()
+	return resp, err
 }

@@ -6,3 +6,4 @@ vault-encrypted-terraform-state
 __debug*
 private.yaml
 *.bkp
+*.sops.yaml

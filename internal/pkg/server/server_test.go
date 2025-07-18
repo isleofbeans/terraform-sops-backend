@@ -183,7 +183,7 @@ func Test_server_writeResponse(t *testing.T) {
 				transformer:   transformer,
 				requestLogger: config.Logger().Named("frontend"),
 			}
-			s.writeResponse(responseWriter, backendResponse.build(), tt.incomingMethod)
+			s.writeResponse(responseWriter, backendResponse.build(), tt.incomingMethod, "/test")
 			assert.Equal(t, tt.backendStatusCode, responseWriter.statusCode)
 			expectedResponseHeader := http.Header{
 				"Content-Type":                       []string{backendResponse.responseContentType},
@@ -421,11 +421,12 @@ func (c *simpleTestServerConfig) ServerPort() string {
 	c.currentTest.Fatal("Unexpected config read AgePublicKey() ")
 	return ""
 }
-func (c *simpleTestServerConfig) BackendURL() string          { return c.backendURL }
-func (c *simpleTestServerConfig) BackendLockMethod() string   { return c.backendLockMethod }
-func (c *simpleTestServerConfig) BackendUnlockMethod() string { return c.backendUnlockMethod }
-func (c *simpleTestServerConfig) Logger() hclog.Logger        { return testLogger }
-func (c *simpleTestServerConfig) String() string              { return "test-server-config" }
+func (c *simpleTestServerConfig) BackendURL() string                { return c.backendURL }
+func (c *simpleTestServerConfig) BackendLockMethod() string         { return c.backendLockMethod }
+func (c *simpleTestServerConfig) BackendUnlockMethod() string       { return c.backendUnlockMethod }
+func (c *simpleTestServerConfig) BackendReadinessProbePath() string { return "/" }
+func (c *simpleTestServerConfig) Logger() hclog.Logger              { return testLogger }
+func (c *simpleTestServerConfig) String() string                    { return "test-server-config" }
 
 type simpleTestBackendClient struct {
 	err             error
