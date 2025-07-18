@@ -33,6 +33,7 @@ type VaultConfig interface {
 	VaultKeyName() string
 	VaultAppRoleID() string
 	VaultAppRoleSecretID() string
+	Logger() hclog.Logger
 }
 
 // TransformConfig provides transform configuration data
@@ -48,6 +49,7 @@ type ServerConfig interface {
 	BackendURL() string
 	BackendLockMethod() string
 	BackendUnlockMethod() string
+	BackendReadinessProbePath() string
 	Logger() hclog.Logger
 	String() string
 }

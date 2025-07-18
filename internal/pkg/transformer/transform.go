@@ -30,6 +30,7 @@ import (
 	"github.com/getsops/sops/v3/keyservice"
 	"github.com/getsops/sops/v3/stores/json"
 	"github.com/getsops/sops/v3/version"
+	"github.com/prometheus/client_golang/prometheus"
 	transformConfig "github.com/wtschreiter/terraformsopsbackend/internal/pkg/config"
 )
 
@@ -48,6 +49,8 @@ type transform struct{}
 
 // ToSops transforms the input JSON data into a SOPS encrypted JSON data and hands it tho the handler
 func (transform) ToSops(config transformConfig.TransformConfig, input []byte, handler func(result []byte)) error {
+	timer := prometheus.NewTimer(transformerRequestDuration.WithLabelValues("encrypt"))
+	defer timer.ObserveDuration()
 
 	cipher := aes.NewCipher()
 	inputStore := inputStore()
@@ -84,7 +87,7 @@ func (transform) ToSops(config transformConfig.TransformConfig, input []byte, ha
 		Branches: branches,
 		Metadata: encryptMetadata(group),
 	}
-	dataKey, errs := tree.GenerateDataKeyWithKeyServices([]keyservice.KeyServiceClient{keyservice.NewCustomLocalClient(newKeyServiceServer(config, keyservice.Server{}))})
+	dataKey, errs := tree.GenerateDataKeyWithKeyServices([]keyservice.KeyServiceClient{keyservice.NewCustomLocalClient(cachedKeyServiceServer(config))})
 	if len(errs) > 0 {
 		err = fmt.Errorf("could not generate data key: %s", errs)
 		return err
@@ -109,6 +112,8 @@ func (transform) ToSops(config transformConfig.TransformConfig, input []byte, ha
 
 // FromSops transforms the SOPS encrypted input JSON data into a decrypted JSON data and hands it tho the handler
 func (transform) FromSops(config transformConfig.TransformConfig, input []byte, handler func(result []byte) error) error {
+	timer := prometheus.NewTimer(transformerRequestDuration.WithLabelValues("decrypt"))
+	defer timer.ObserveDuration()
 
 	os.Setenv(age.SopsAgeKeyEnv, config.AgePrivateKey())
 
@@ -122,7 +127,7 @@ func (transform) FromSops(config transformConfig.TransformConfig, input []byte, 
 	key, err := tree.Metadata.GetDataKeyWithKeyServices(
 		[]keyservice.KeyServiceClient{
 			keyservice.NewCustomLocalClient(
-				newKeyServiceServer(config, keyservice.Server{}),
+				cachedKeyServiceServer(config),
 			),
 		},
 		[]string{
