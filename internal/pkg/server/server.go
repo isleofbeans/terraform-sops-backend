@@ -24,6 +24,7 @@ import (
 
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/go-retryablehttp"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/wtschreiter/terraformsopsbackend/internal/pkg/backend"
 	"github.com/wtschreiter/terraformsopsbackend/internal/pkg/config"
 	"github.com/wtschreiter/terraformsopsbackend/internal/pkg/transformer"
@@ -75,6 +76,9 @@ type server struct {
 }
 
 func (s server) Start() {
+	for _, v := range []string{"1xx", "2xx", "3xx", "4xx", "5xx"} {
+		responseStatusCounter.WithLabelValues(v)
+	}
 	http.HandleFunc("/", s.newRequestHandler())
 	s.config.Logger().Trace("Used configuration", "config", s.config.String())
 	s.config.Logger().Info("Start service", "port", s.config.ServerPort(), "vault_addr", s.config.VaultAddr(), "has_private_age_key", len(s.config.AgePrivateKey()) > 0)
@@ -83,28 +87,32 @@ func (s server) Start() {
 
 func (s server) newRequestHandler() func(http.ResponseWriter, *http.Request) {
 	return func(responseWriter http.ResponseWriter, incomingRequest *http.Request) {
+		timer := prometheus.NewTimer(requestDuration.WithLabelValues(incomingRequest.Method))
+		defer func() {
+			duration := timer.ObserveDuration()
+			if s.requestLogger.IsDebug() {
+				s.requestLogger.Debug("finished incoming request", "method", incomingRequest.Method, "uri", buildIncomingURI(incomingRequest.URL), "duration", duration)
+			}
+		}()
 
 		if s.requestLogger.IsDebug() {
 			s.requestLogger.Debug("incoming request", "method", incomingRequest.Method, "uri", buildIncomingURI(incomingRequest.URL))
 		}
 
 		if !isSupportedRequestMethod(incomingRequest.Method) {
-			s.requestLogger.Warn("Method Not Allowed", "method", incomingRequest.Method)
-			http.Error(responseWriter, "Method Not Allowed", http.StatusMethodNotAllowed)
+			s.writeErrorResponse(responseWriter, "Method Not Allowed", http.StatusMethodNotAllowed, incomingRequest.Method, nil, "Method Not Allowed")
 			return
 		}
 
 		backendRequest, err := s.buildBackendRequest(incomingRequest)
 		if err != nil {
-			s.requestLogger.Warn("Can not build backend request", "error", err)
-			http.Error(responseWriter, err.Error(), http.StatusInternalServerError)
+			s.writeErrorResponse(responseWriter, err.Error(), http.StatusInternalServerError, incomingRequest.Method, err, "Can not build backend request")
 			return
 		}
 
 		backendResponse, err := s.backend.Send(backendRequest)
 		if err != nil {
-			s.requestLogger.Warn("Can not perform backend request", "error", err)
-			http.Error(responseWriter, err.Error(), http.StatusInternalServerError)
+			s.writeErrorResponse(responseWriter, err.Error(), http.StatusInternalServerError, incomingRequest.Method, err, "Can not perform backend request")
 			return
 		}
 		s.writeResponse(responseWriter, backendResponse, incomingRequest.Method)
@@ -145,8 +153,7 @@ func (s server) writeResponse(responseWriter http.ResponseWriter, backendRespons
 	copyHeader(backendResponse.Header, responseWriter.Header(), ignoredResponseHeaders)
 	responseBody, err := readBody(backendResponse.Body)
 	if err != nil {
-		s.requestLogger.Warn("Can not read backend response body", "error", err)
-		http.Error(responseWriter, err.Error(), http.StatusInternalServerError)
+		s.writeErrorResponse(responseWriter, err.Error(), http.StatusInternalServerError, "", err, "Can not read backend response body")
 		return
 	}
 	if requestMethod == methodGet && len(responseBody) > 0 {
@@ -159,8 +166,32 @@ func (s server) writeResponse(responseWriter http.ResponseWriter, backendRespons
 	if backendResponse.StatusCode/100 != 2 {
 		s.requestLogger.Warn("Unexpected backendResponse", "status-code", backendResponse.StatusCode)
 	}
+	s.incResponseStatusCounter(backendResponse.StatusCode)
 	responseWriter.WriteHeader(backendResponse.StatusCode)
 	responseWriter.Write(responseBody)
+}
+
+func (s server) writeErrorResponse(responseWriter http.ResponseWriter, error string, code int, incomingRequestMethod string, err error, logMessage string) {
+	defer func() {
+		if flusher, ok := responseWriter.(http.Flusher); ok {
+			s.requestLogger.Trace("Flush response writer")
+			flusher.Flush()
+		}
+	}()
+	logArgs := make([]interface{}, 0)
+	if incomingRequestMethod != "" {
+		logArgs = append(logArgs, "method", incomingRequestMethod)
+	}
+	if err != nil {
+		logArgs = append(logArgs, "error", err)
+	}
+	s.requestLogger.Warn(logMessage, logArgs...)
+	s.incResponseStatusCounter(code)
+	http.Error(responseWriter, error, code)
+}
+
+func (s server) incResponseStatusCounter(code int) {
+	responseStatusCounter.WithLabelValues(fmt.Sprintf("%vxx", code/100)).Inc()
 }
 
 func readBody(body io.ReadCloser) ([]byte, error) {

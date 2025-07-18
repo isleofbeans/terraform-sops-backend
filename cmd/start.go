@@ -19,11 +19,13 @@ import (
 	"io"
 	"os"
 	"strings"
+	"sync"
 
 	"github.com/hashicorp/go-hclog"
 	"github.com/spf13/cobra"
 	"github.com/wtschreiter/terraformsopsbackend/internal/pkg/backend"
 	"github.com/wtschreiter/terraformsopsbackend/internal/pkg/config"
+	"github.com/wtschreiter/terraformsopsbackend/internal/pkg/monitoring"
 	"github.com/wtschreiter/terraformsopsbackend/internal/pkg/server"
 	"github.com/wtschreiter/terraformsopsbackend/internal/pkg/transformer"
 )
@@ -67,6 +69,9 @@ const (
 
 	cobraKeyBackendUnlockMethod string = "backend-unlock-method"
 	viperKeyBackendUnlockMethod string = "backend.unlock_method"
+
+	cobraKeyBackendReadinessProbePath string = "backend-readiness-probe-path"
+	viperKeyBackendReadinessProbePath string = "backend.readiness_probe.path"
 )
 
 var (
@@ -96,11 +101,28 @@ This uses the default interface to accept incoming traffic`,
 			cmd.Usage()
 			os.Exit(200)
 		}
-		server.New(
-			config,
-			backend.New(config.Logger().Named("backend")),
-			transformer.New(),
-		).Start()
+		if config.Logger().IsDebug() {
+			fmt.Fprintln(os.Stderr, config)
+		}
+		backendClient := backend.New(config.Logger().Named("backend"))
+		wg := sync.WaitGroup{}
+		wg.Add(2)
+		go func() {
+			defer wg.Done()
+			monitoring.NewMonitoringServer(
+				config,
+				backendClient,
+			).Start()
+		}()
+		go func() {
+			defer wg.Done()
+			server.New(
+				config,
+				backendClient,
+				transformer.New(),
+			).Start()
+		}()
+		wg.Wait()
 	},
 }
 
@@ -118,6 +140,7 @@ func initStartCmd() {
 	registerStringParameter(startCmd, cobraKeyBackendURL, viperKeyBackendURL, "base url to connect with the backend terraform state server", true)
 	registerStringParameterWithDefault(startCmd, cobraKeyBackendLockMethod, viperKeyBackendLockMethod, "lock method to use with the backend terraform state server", false, "LOCK")
 	registerStringParameterWithDefault(startCmd, cobraKeyBackendUnlockMethod, viperKeyBackendUnlockMethod, "unlock method to use with the backend terraform state server", false, "UNLOCK")
+	registerStringParameterWithDefault(startCmd, cobraKeyBackendReadinessProbePath, viperKeyBackendReadinessProbePath, "path to probe backend for readiness.", false, "/")
 
 	//-------
 
@@ -161,6 +184,9 @@ func (c serverConfig) BackendLockMethod() string {
 func (c serverConfig) BackendUnlockMethod() string {
 	return cmdViper.GetString(viperKeyBackendUnlockMethod)
 }
+func (c serverConfig) BackendReadinessProbePath() string {
+	return cmdViper.GetString(viperKeyBackendReadinessProbePath)
+}
 func (c serverConfig) Logger() hclog.Logger { return c.logger }
 func (c serverConfig) String() string {
 	return fmt.Sprintf(
@@ -171,6 +197,8 @@ backend:
   url: %s
   lock_method: %s
   unlock_method: %s
+  readiness_probe:
+    path: %s
 transform:
   age:
     public_key: %s
@@ -187,6 +215,7 @@ transform:
 		c.presentedToStringValue(c.BackendURL()),
 		c.presentedToStringValue(c.BackendLockMethod()),
 		c.presentedToStringValue(c.BackendUnlockMethod()),
+		c.presentedToStringValue(c.BackendReadinessProbePath()),
 		c.presentedToStringValue(c.AgePublicKey()),
 		c.hiddenToStringValue(c.AgePrivateKey()),
 		c.presentedToStringValue(c.VaultAddr()),
