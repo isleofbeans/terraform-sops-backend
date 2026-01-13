@@ -5,16 +5,16 @@ default_install_hook_types: [pre-commit, commit-msg]
 # Limit hooks to running in the pre-commit stage unless specified otherwise.
 default_stages: [pre-commit]
 repos:
-  - repo: https://github.com/aentwist/pre-commit-mirrors-commitlint
-    rev: v19.8.1
+  - repo: https://github.com/aentwist/pre-commit-mirrors-commitlint.git
+    rev: v20.3.0
     hooks:
       - id: commitlint
         stages: [commit-msg]
         additional_dependencies:
-          - commitlint@19.7.1
-          - "@commitlint/config-conventional@19.7.1"
-  - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v5.0.0
+          - commitlint@20.3.0
+          - "@commitlint/config-conventional@20.3.0"
+  - repo: https://github.com/pre-commit/pre-commit-hooks.git
+    rev: v6.0.0
     hooks:
       - id: trailing-whitespace
         args:
@@ -22,8 +22,8 @@ repos:
           - --markdown-linebreak-ext=tf
       - id: end-of-file-fixer
       - id: check-added-large-files
-  - repo: https://github.com/Lucas-C/pre-commit-hooks
-    rev: v1.5.5
+  - repo: https://github.com/Lucas-C/pre-commit-hooks.git
+    rev: v1.5.6
     hooks:
       - id: insert-license
         files: \.go$
@@ -33,18 +33,15 @@ repos:
           - --comment-style
           - //
           - --use-current-year
-  - repo: https://github.com/dnephin/pre-commit-golang
-    rev: v0.5.1
+  - repo: https://github.com/tekwizely/pre-commit-golang.git
+    rev: v1.0.0-rc.4
     hooks:
-      - id: go-fmt
-      - id: go-lint
-      - id: go-imports
-      - id: validate-toml
-      - id: no-go-testing
-      - id: go-unit-tests
       - id: go-mod-tidy
-  - repo: https://github.com/antonbabenko/pre-commit-terraform
-    rev: v1.96.2
+        exclude: '^go_modules'
+      - id: go-imports
+      - id: go-lint
+  - repo: https://github.com/antonbabenko/pre-commit-terraform.git
+    rev: v1.104.0
     hooks:
       - id: terraform_fmt
       - id: terraform_validate
@@ -52,8 +49,8 @@ repos:
         args:
           - --args=--config=__GIT_WORKING_DIR__/examples/.tflint.hcl
           - --args=--var-file=__GIT_WORKING_DIR__/examples/.tflint.tfvars
-  - repo: https://github.com/terraform-docs/terraform-docs
-    rev: v0.19.0
+  - repo: https://github.com/terraform-docs/terraform-docs.git
+    rev: v0.21.0
     hooks:
       # Must be repeated with id: terraform-docs-go
       # Per module in the repository
@@ -63,7 +60,7 @@ repos:
       - id: terraform-docs-go
         args: ["./examples/vault-setup"]
 
-  - repo: https://github.com/gruntwork-io/pre-commit
-    rev: v0.1.25
+  - repo: https://github.com/gruntwork-io/pre-commit.git
+    rev: v0.1.30
     hooks:
       - id: terragrunt-hclfmt
