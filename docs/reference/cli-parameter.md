@@ -31,24 +31,33 @@ Starts the web service for the terraform SOPS backend.
 This uses the default interface to accept incoming traffic
 
 ```
+Starts the web service for the terraform SOPS backend.                                                                        plainsh
+
+This uses the default interface to accept incoming traffic
+
 Usage:
   terraform-sops-backend start [flags]
 
 Flags:
-      --age-private-key string            TRANSFORM_AGE_PRIVATE_KEY (optional) private AGE key to decrypt terraform state
-      --age-public-key string             TRANSFORM_AGE_PUBLIC_KEY (required) public AGE key to encrypt terraform state
-      --backend-lock-method string        BACKEND_LOCK_METHOD (optional) lock method to use with the backend terraform state server (default "LOCK")
-      --backend-unlock-method string      BACKEND_UNLOCK_METHOD (optional) unlock method to use with the backend terraform state server (default "UNLOCK")
-      --backend-url string                BACKEND_URL (required) base url to connect with the backend terraform state server
-  -h, --help                              help for start
-      --log-json                          LOG_JSON (optional) if logging has to use json format
-      --log-level string                  LOG_LEVEL (optional) active log level one of [TRACE, DEBUG, INFO, WARN, ERROR, OFF] (default "INFO")
-      --port string                       SERVER_PORT (optional) port the service is listening to (default "8080")
-      --vault-addr string                 TRANSFORM_VAULT_ADDRESS (optional) vault address to de- and encrypt terraform state
-      --vault-app-role-id string          TRANSFORM_VAULT_APP_ROLE_ID (optional) (required if --vault-addr != "") AppRole ID to authenticate with vault
-      --vault-app-role-secret-id string   TRANSFORM_VAULT_APP_ROLE_SECRET_ID (optional) (required if --vault-addr != "") AppRole secret ID to authenticate with vault
-      --vault-transit-mount string        TRANSFORM_VAULT_TRANSIT_MOUNT (optional) mount point of the transit engine to use (default "sops")
-      --vault-transit-name string         TRANSFORM_VAULT_TRANSIT_NAME (optional) name of the transit engine secret to use (default "terraform")
+      --age-private-key string                TRANSFORM_AGE_PRIVATE_KEY (optional) private AGE key to decrypt terraform state
+      --age-public-key string                 TRANSFORM_AGE_PUBLIC_KEY (required) public AGE key to encrypt terraform state
+      --backend-lock-method string            BACKEND_LOCK_METHOD (optional) lock method to use with the backend terraform state server (default "LOCK")
+      --backend-mtls-cert string              BACKEND_MTLS_CERT (optional) cert data for mTLS authentication
+      --backend-mtls-cert-file string         BACKEND_MTLS_CERT_FILE (optional) certificate file for mTLS authentication
+      --backend-mtls-key string               BACKEND_MTLS_KEY (optional) key data for mTLS authentication
+      --backend-mtls-key-file string          BACKEND_MTLS_KEY_FILE (optional) key file for mTLS authentication
+      --backend-readiness-probe-path string   BACKEND_READINESS_PROBE_PATH (optional) path to probe backend for readiness. (default "/")
+      --backend-unlock-method string          BACKEND_UNLOCK_METHOD (optional) unlock method to use with the backend terraform state server (default "UNLOCK")
+      --backend-url string                    BACKEND_URL (required) base url to connect with the backend terraform state server
+  -h, --help                                  help for start
+      --log-json                              LOG_JSON (optional) if logging has to use json format
+      --log-level string                      LOG_LEVEL (optional) active log level one of [TRACE, DEBUG, INFO, WARN, ERROR, OFF] (default "INFO")
+      --port string                           SERVER_PORT (optional) port the service is listening to (default "8080")
+      --vault-addr string                     TRANSFORM_VAULT_ADDRESS (optional) vault address to de- and encrypt terraform state
+      --vault-app-role-id string              TRANSFORM_VAULT_APP_ROLE_ID (optional) (required if --vault-addr != "") AppRole ID to authenticate with vault
+      --vault-app-role-secret-id string       TRANSFORM_VAULT_APP_ROLE_SECRET_ID (optional) (required if --vault-addr != "") AppRole secret ID to authenticate with vault
+      --vault-transit-mount string            TRANSFORM_VAULT_TRANSIT_MOUNT (optional) mount point of the transit engine to use (default "sops")
+      --vault-transit-name string             TRANSFORM_VAULT_TRANSIT_NAME (optional) name of the transit engine secret to use (default "terraform")
 
 Global Flags:
       --config string   config file (default "/etc/terraform-sops-backend/conf.yaml")

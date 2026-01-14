@@ -10,6 +10,11 @@ backend:
   url: ""                 # (required) base url to connect with the backend terraform state server
   lock_method: "LOCK"     # (optional) lock method to use with the backend terraform state server
   unlock_method: "UNLOCK" # (optional) unlock method to use with the backend terraform state server
+  mtls:
+    cert: ""              # (optional) cert data for mTLS authentication
+    cert_file: ""         # (optional) certificate file for mTLS authentication
+    key: ""               # (optional) key data for mTLS authentication
+    key_file: ""          # (optional) key file for mTLS authentication
 transform:
   age:
     public_key: ""        # (required) public AGE key to encrypt terraform state

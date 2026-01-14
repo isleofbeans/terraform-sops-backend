@@ -1,4 +1,4 @@
-ARG GO_VERSION=1.24-alpine
+ARG GO_VERSION=1.25-alpine
 FROM docker.io/golang:${GO_VERSION} as builder
 
 # Install git + SSL ca certificates
