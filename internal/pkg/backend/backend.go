@@ -15,13 +15,15 @@
 package backend
 
 import (
+	"crypto/tls"
 	"fmt"
 	"net/http"
 	"time"
 
-	"github.com/hashicorp/go-hclog"
+	"github.com/hashicorp/go-cleanhttp"
 	"github.com/hashicorp/go-retryablehttp"
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/wtschreiter/terraformsopsbackend/internal/pkg/config"
 )
 
 // Client is sending requests
@@ -30,15 +32,36 @@ type Client interface {
 }
 
 // New creates a Client
-func New(logger hclog.Logger) Client {
-	client := retryablehttp.NewClient()
-	client.RetryMax = 0
-	client.RetryWaitMin = time.Duration(20) * time.Second
-	client.RetryWaitMax = time.Duration(60) * time.Second
-	client.Logger = logger
-	return retryableHTTPClient{
-		client: client,
+func New(config config.ServerConfig) (client Client, err error) {
+
+	var (
+		logger = config.Logger().Named("backend")
+		cert   tls.Certificate
+	)
+
+	httpClient := retryablehttp.NewClient()
+
+	if len(config.BackendMTLSCert()) > 0 || len(config.BackendMTLSKey()) > 0 {
+		cert, err = tls.X509KeyPair(config.BackendMTLSCert(), config.BackendMTLSKey())
+		if err != nil {
+			logger.Error("error loading mTLS certificate and key from data", "err", err, "cert-data-len", len(config.BackendMTLSCert()), "key-data-len", len(config.BackendMTLSKey()))
+			return
+		}
+		tlsConfig := &tls.Config{
+			Certificates: []tls.Certificate{cert},
+		}
+		transport := cleanhttp.DefaultTransport()
+		transport.TLSClientConfig = tlsConfig
+		httpClient.HTTPClient.Transport = transport
 	}
+
+	httpClient.RetryMax = 0
+	httpClient.RetryWaitMin = time.Duration(20) * time.Second
+	httpClient.RetryWaitMax = time.Duration(60) * time.Second
+	httpClient.Logger = logger
+	return retryableHTTPClient{
+		client: httpClient,
+	}, nil
 }
 
 type retryableHTTPClient struct {

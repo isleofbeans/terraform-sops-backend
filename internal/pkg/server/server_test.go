@@ -389,6 +389,16 @@ type simpleTestServerConfig struct {
 	backendUnlockMethod string
 }
 
+func (c *simpleTestServerConfig) BackendMTLSCert() []byte {
+	c.currentTest.Fatal("Unexpected call to BackendMTLSCert")
+	return nil
+}
+
+func (c *simpleTestServerConfig) BackendMTLSKey() []byte {
+	c.currentTest.Fatal("Unexpected config read BackendMTLSKey")
+	return nil
+}
+
 func (c *simpleTestServerConfig) AgePublicKey() string {
 	c.currentTest.Fatal("Unexpected config read AgePublicKey() ")
 	return ""

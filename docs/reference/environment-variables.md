@@ -3,12 +3,16 @@
 [![readme](../assets/breadcrum-readme.drawio.svg)](../../README.md)[![reference](../assets/breadcrum-reference.drawio.svg)](./index.md)
 
 |                                    |                                         |                                                                |             |
-| ---------------------------------- | --------------------------------------- | -------------------------------------------------------------- | ----------- |
+| ---------------------------------- |-----------------------------------------|----------------------------------------------------------------| ----------- |
 | TRANSFORM_AGE_PRIVATE_KEY          | optional                                | private AGE key to decrypt terraform state                     |             |
 | TRANSFORM_AGE_PUBLIC_KEY           | required                                | public AGE key to encrypt terraform state                      |             |
 | BACKEND_LOCK_METHOD                | optional                                | lock method to use with the backend terraform state server     | "LOCK"      |
 | BACKEND_UNLOCK_METHOD              | optional                                | unlock method to use with the backend terraform state server   | "UNLOCK"    |
 | BACKEND_URL                        | required                                | base url to connect with the backend terraform state server    |             |
+| BACKEND_MTLS_CERT                  | optional                                | cert data for mTLS authentication                              |             |
+| BACKEND_MTLS_CERT_FILE             | optional                                | certificate file for mTLS authentication                       |             |
+| BACKEND_MTLS_KEY                   | optional                                | key data for mTLS authentication                               |             |
+| BACKEND_MTLS_KEY_FILE              | optional                                | key file for mTLS authentication                               |             |
 | LOG_JSON                           | optional                                | if logging has to use json format                              |             |
 | LOG_LEVEL                          | optional                                | active log level one of [TRACE, DEBUG, INFO, WARN, ERROR, OFF] | "INFO"      |
 | SERVER_PORT                        | optional                                | port the service is listening to                               | "8080"      |

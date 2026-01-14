@@ -72,6 +72,18 @@ const (
 
 	cobraKeyBackendReadinessProbePath string = "backend-readiness-probe-path"
 	viperKeyBackendReadinessProbePath string = "backend.readiness_probe.path"
+
+	cobraKeyBackendMTLSCert string = "backend-mtls-cert"
+	viperKeyBackendMTLSCert string = "backend.mtls.cert"
+
+	cobraKeyBackendMTLSCertFile string = "backend-mtls-cert-file"
+	viperKeyBackendMTLSCertFile string = "backend.mtls.cert_file"
+
+	cobraKeyBackendMTLSKey string = "backend-mtls-key"
+	viperKeyBackendMTLSKey string = "backend.mtls.key"
+
+	cobraKeyBackendMTLSKeyFile string = "backend-mtls-key-file"
+	viperKeyBackendMTLSKeyFile string = "backend.mtls.key_file"
 )
 
 var (
@@ -96,15 +108,21 @@ This uses the default interface to accept incoming traffic`,
 		fmt.Println(cfgFile)
 		config, err := newServerConfig()
 		if err != nil {
-			fmt.Fprintln(os.Stderr, err)
-			fmt.Fprintln(os.Stderr, config)
-			cmd.Usage()
+			_, _ = fmt.Fprintln(os.Stderr, err)
+			_, _ = fmt.Fprintln(os.Stderr, config)
+			_ = cmd.Usage()
 			os.Exit(200)
 		}
 		if config.Logger().IsDebug() {
-			fmt.Fprintln(os.Stderr, config)
+			_, _ = fmt.Fprintln(os.Stderr, config)
 		}
-		backendClient := backend.New(config.Logger().Named("backend"))
+		backendClient, err := backend.New(config)
+		if err != nil {
+			_, _ = fmt.Fprintln(os.Stderr, err)
+			_, _ = fmt.Fprintln(os.Stderr, config)
+			_ = cmd.Usage()
+			os.Exit(200)
+		}
 		wg := sync.WaitGroup{}
 		wg.Add(2)
 		go func() {
@@ -138,6 +156,10 @@ func initStartCmd() {
 	registerStringParameterWithDefault(startCmd, cobraKeyVaultTransitName, viperKeyVaultTransitName, "name of the transit engine secret to use", false, "terraform")
 	registerStringParameterWithDefault(startCmd, cobraKeyServerPort, viperKeyServerPort, "port the service is listening to", false, "8080")
 	registerStringParameter(startCmd, cobraKeyBackendURL, viperKeyBackendURL, "base url to connect with the backend terraform state server", true)
+	registerStringParameter(startCmd, cobraKeyBackendMTLSCert, viperKeyBackendMTLSCert, "cert data for mTLS authentication", false)
+	registerStringParameter(startCmd, cobraKeyBackendMTLSCertFile, viperKeyBackendMTLSCertFile, "certificate file for mTLS authentication", false)
+	registerStringParameter(startCmd, cobraKeyBackendMTLSKey, viperKeyBackendMTLSKey, "key data for mTLS authentication", false)
+	registerStringParameter(startCmd, cobraKeyBackendMTLSKeyFile, viperKeyBackendMTLSKeyFile, "key file for mTLS authentication", false)
 	registerStringParameterWithDefault(startCmd, cobraKeyBackendLockMethod, viperKeyBackendLockMethod, "lock method to use with the backend terraform state server", false, "LOCK")
 	registerStringParameterWithDefault(startCmd, cobraKeyBackendUnlockMethod, viperKeyBackendUnlockMethod, "unlock method to use with the backend terraform state server", false, "UNLOCK")
 	registerStringParameterWithDefault(startCmd, cobraKeyBackendReadinessProbePath, viperKeyBackendReadinessProbePath, "path to probe backend for readiness.", false, "/")
@@ -178,6 +200,30 @@ func (c serverConfig) VaultKeyMount() string { return cmdViper.GetString(viperKe
 func (c serverConfig) VaultKeyName() string  { return cmdViper.GetString(viperKeyVaultTransitName) }
 func (c serverConfig) ServerPort() string    { return cmdViper.GetString(viperKeyServerPort) }
 func (c serverConfig) BackendURL() string    { return cmdViper.GetString(viperKeyBackendURL) }
+func (c serverConfig) BackendMTLSCert() []byte {
+	file := cmdViper.GetString(viperKeyBackendMTLSCertFile)
+	if file != "" {
+		data, err := os.ReadFile(file)
+		if err != nil {
+			c.logger.Error("error reading mTLS cert file", "file", file, "err", err)
+			os.Exit(200)
+		}
+		return data
+	}
+	return []byte(cmdViper.GetString(viperKeyBackendMTLSCert))
+}
+func (c serverConfig) BackendMTLSKey() []byte {
+	file := cmdViper.GetString(viperKeyBackendMTLSKeyFile)
+	if file != "" {
+		data, err := os.ReadFile(file)
+		if err != nil {
+			c.logger.Error("error reading mTLS key file", "file", file, "err", err)
+			os.Exit(200)
+		}
+		return data
+	}
+	return []byte(cmdViper.GetString(viperKeyBackendMTLSKey))
+}
 func (c serverConfig) BackendLockMethod() string {
 	return cmdViper.GetString(viperKeyBackendLockMethod)
 }
@@ -195,6 +241,9 @@ server:
   port: %s
 backend:
   url: %s
+  mtls:
+    cert: %s
+    key: %s
   lock_method: %s
   unlock_method: %s
   readiness_probe:
@@ -213,6 +262,8 @@ transform:
       name: %s`,
 		c.presentedToStringValue(c.ServerPort()),
 		c.presentedToStringValue(c.BackendURL()),
+		c.hiddenToStringValue(string(c.BackendMTLSCert())),
+		c.hiddenToStringValue(string(c.BackendMTLSKey())),
 		c.presentedToStringValue(c.BackendLockMethod()),
 		c.presentedToStringValue(c.BackendUnlockMethod()),
 		c.presentedToStringValue(c.BackendReadinessProbePath()),

@@ -47,6 +47,8 @@ type ServerConfig interface {
 	TransformConfig
 	ServerPort() string
 	BackendURL() string
+	BackendMTLSCert() []byte
+	BackendMTLSKey() []byte
 	BackendLockMethod() string
 	BackendUnlockMethod() string
 	BackendReadinessProbePath() string
@@ -70,6 +72,9 @@ func ValidateServerConfig(config ServerConfig) error {
 	}
 	if config.VaultAddr() != "" && config.VaultAppRoleSecretID() == "" {
 		return fmt.Errorf("vault AppRole secret ID required")
+	}
+	if (len(config.BackendMTLSCert()) > 0 || len(config.BackendMTLSKey()) > 0) && (len(config.BackendMTLSCert()) == 0 || len(config.BackendMTLSKey()) == 0) {
+		return fmt.Errorf("backend MTLS certificate (len %d) or key(len %d) is empty", len(config.BackendMTLSCert()), len(config.BackendMTLSKey()))
 	}
 	return nil
 }
